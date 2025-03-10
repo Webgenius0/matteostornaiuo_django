@@ -1,0 +1,70 @@
+/* General Reset */
+
+.dashboard-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.card {
+  border: 1px solid gray;
+  border-radius: 10px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+
+  padding: 20px;
+  text-align: center;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.card-icon {
+  font-size: 2rem;
+  color: #4f46e5;
+  margin-bottom: 15px;
+}
+
+.card-title {
+  font-size: 1rem;
+  margin-bottom: 5px;
+}
+
+.card-value {
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+/* for dashboard_user_table */
+.table-section {
+  margin-top: 10px;
+  border: 1px solid gray;
+}
+.dashboard_user_table {
+  width: 48%;
+  border-collapse: collapse;
+  font-family: Arial, sans-serif;
+  display: inline-table; /* Ensures tables sit side by side */
+  margin: 1%;
+}
+.dashboard_user_table th, .dashboard_user_table td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+}
+/* .dashboard_user_table th {
+  background-color: #f4f4f4;
+} */
+/* .dashboard_user_table tr:nth-child(even) {
+  background-color: #f9f9f9;
+} */
+.dashboard_user_table tr:hover {
+  background-color: #f1f1f15d;
+}
+.table-section {
+  display: flex; /* Flexbox to align tables horizontally */
+  justify-content: space-between; /* Adds spacing between tables */
+  width: 100%;
+}

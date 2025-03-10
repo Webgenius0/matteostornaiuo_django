@@ -1,6 +1,7 @@
 {% extends 'unfold/layouts/base_simple.html' %}
 
-{% load i18n %}
+{% load i18n static unfold %}
+
 
 {% block breadcrumbs %}{% endblock %}
 
@@ -16,11 +17,124 @@
 
 {% block content %}
 
-    <p>Total user: {{total_users}}</p>
-    <p>Total total superusers: {{total_superusers}}</p>
-    <p>Total total client: {{total_clients}}</p>
-    <p>Total total staff: {{total_staff}}</p>
+<div class="dashboard-container">
+    <div class="card">
+      <div class="card-icon"><i class="fas fa-users"></i></div>
+      <div class="card-content">
+        <p class="card-title">Total Users</p>
+        <p class="card-value">{{user_dashbord_data.total_users}}</p>
+      </div>
+    </div>
+  
+    <div class="card">
+      <div class="card-icon"><i class="fas fa-user-shield"></i></div>
+      <div class="card-content">
+        <p class="card-title">Total Superusers</p>
+        <p class="card-value">{{user_dashbord_data.total_superusers}}</p>
+      </div>
+    </div>
+  
+    <div class="card">
+      <div class="card-icon"><i class="fas fa-user-tie"></i></div>
+      <div class="card-content">
+        <p class="card-title">Total Clients</p>
+        <p class="card-value">{{user_dashbord_data.total_clients}}</p>
+      </div>
+    </div>
+  
+    <div class="card">
+      <div class="card-icon"><i class="fas fa-user-cog"></i></div>
+      <div class="card-content">
+        <p class="card-title">Total Staff</p>
+        <p class="card-value">{{user_dashbord_data.total_staff}}</p>
+      </div>
+    </div>
+  </div>
 
+  <div class="table-section">
+    <table class="dashboard_user_table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>John Doe</td>
+                <td>john.doe@example.com</td>
+                <td>Admin</td>
+                <td>New</td>
+            </tr>
+            <tr>
+                <td>Jane Smith</td>
+                <td>jane.smith@example.com</td>
+                <td>User</td>
+                <td>Yesterday</td>
+            </tr>
+            <tr>
+                <td>Emily Davis</td>
+                <td>emily.davis@example.com</td>
+                <td>Editor</td>
+                <td>Last Week</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <table class="dashboard_user_table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Michael Brown</td>
+                <td>michael.brown@example.com</td>
+                <td>Manager</td>
+                <td>New</td>
+            </tr>
+            <tr>
+                <td>Olivia Wilson</td>
+                <td>olivia.wilson@example.com</td>
+                <td>Analyst</td>
+                <td>Yesterday</td>
+            </tr>
+            <tr>
+                <td>James Lee</td>
+                <td>james.lee@example.com</td>
+                <td>Developer</td>
+                <td>Last Week</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+
+  <div class="chart-container" style="width: 400px; border: 1px solid gray; border-radius: 5px; margin-top: 10px; padding: 10px;">
+    <canvas id="userChart"></canvas>
+  </div>
+
+
+
+<!-- Include Chart.js -->
+<script id="userData" type="application/json">
+  {
+      "total_superusers": {{ user_dashbord_data.total_superusers }},
+      "total_clients": {{ user_dashbord_data.total_clients }},
+      "total_staff": {{ user_dashbord_data.total_staff }}
+  }
+</script>
+
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     {% comment %} Start creating your own Tailwind components here {% endcomment %}
 {% endblock %}

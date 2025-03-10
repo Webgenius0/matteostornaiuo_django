@@ -1,0 +1,27 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="{% static 'css/main.css' %}">
+
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="card" style="background-color: #f0f8ff;">
+            <p class="label">Total Users</p>
+        </div>
+        <div class="card" style="background-color: #fff0f5;">
+            <p class="label">Total Superusers</p>
+        </div>
+        <div class="card" style="background-color: #f5f5dc;">
+            <p class="label">Total Clients</p>
+        </div>
+        <div class="card" style="background-color: #e6e6fa;">
+            <p class="label">Total Staff</p>
+        </div>
+    </div>
+</body>
+</html>

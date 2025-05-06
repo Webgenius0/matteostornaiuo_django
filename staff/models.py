@@ -5,9 +5,11 @@ from datetime import datetime
 from django.utils import timezone
 from django.core.validators import ValidationError
 from dateutil.relativedelta import relativedelta
-
 from users.models import JobRole, Skill
-from storages.backends.s3boto3 import S3Boto3Storage
+
+from project.s3bucket import CustomS3Storage
+
+
 User = get_user_model()
 
 
@@ -15,9 +17,7 @@ User = get_user_model()
 
 
 
-class CustomS3Storage(S3Boto3Storage):
-    location = 'letme'
-    file_overwrite = False
+
 
 
 
@@ -35,8 +35,8 @@ class Staff(models.Model):
     gender = models.CharField(max_length=5, blank=True, null=True)
     country = models.CharField(max_length=100, blank=True, null=True)
     post_code = models.CharField(max_length=20, blank=True, null=True)
-    cv = models.FileField(blank=True, null=True, upload_to='staff/cv/')
-    video_cv = models.FileField(blank=True, null=True, upload_to='staff/video_resume/')
+    cv = models.FileField(blank=True, null=True, storage=CustomS3Storage(), upload_to='staff/cv/')
+    video_cv = models.FileField(blank=True, null=True, storage=CustomS3Storage(), upload_to='staff/video_resume/')
 
     # role = models.ManyToManyField(JobRole, blank=True, related_name='staff_roles')
     skills = models.ManyToManyField(Skill, blank=True, related_name="staff_skill")

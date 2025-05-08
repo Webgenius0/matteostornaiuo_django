@@ -120,13 +120,8 @@ class FeedJobView(APIView):
         if pk:
             user = request.user
             # get from cache
-            vacancy = cache.get('vacancy')
-            if not vacancy:
-                vacancy = Vacancy.objects.filter(pk=pk).select_related('job', 'job_title', 'uniform').prefetch_related('skills', 'participants').first()
-                cache.set('vacancy', vacancy, 60*60*24)
-
-            # vacancy = Vacancy.objects.filter(pk=pk).select_related('job', 'job_title', 'uniform').prefetch_related('skills', 'participants').first()
-                
+            
+            vacancy = Vacancy.objects.filter(pk=pk).select_related('job', 'job_title', 'uniform').prefetch_related('skills', 'participants').first()
             if not vacancy:
                 response = {
                     "status": status.HTTP_200_OK,

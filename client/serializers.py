@@ -146,7 +146,7 @@ class CreateVacancySerializers(serializers.ModelSerializer):
         skills = validated_data.pop('skills',[])
         invited_staff_id = validated_data.pop('invited_staff',[])
         
-        print('validated data', validated_data['job'].status)
+        # print('validated data', validated_data['job'].status)
         vacancy = Vacancy.objects.create(
             **validated_data
         )

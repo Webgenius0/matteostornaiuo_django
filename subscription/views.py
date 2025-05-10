@@ -33,7 +33,13 @@ class PackageView(APIView):
     def get(self, request):
         packages = Packages.objects.all()
         serializer = PackagesSerializer(packages, many=True)
-        return Response(serializer.data)
+        response = {
+            "status": status.HTTP_200_OK,
+            "success": True,
+            "message": "List of packages",
+            "data": serializer.data
+        }
+        return Response(response)
     
 # @csrf_exempt
 # @api_view(['POST'])

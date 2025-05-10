@@ -1222,3 +1222,17 @@ class ClientProfileImageView(APIView):
             "message": "Only client can access this endpoint"
         }
         return Response(response_data, status=status.HTTP_403_FORBIDDEN)
+    
+
+class InvitationCheckoutView(APIView):
+    def post(self, request, *args, **kwargs):
+        user = request.user
+        data = request.data
+
+        if user.is_client:
+            client = get_object_or_404(CompanyProfile, user=user)
+        else:
+            return Response({"error": "Only client can access this endpoint"}, status=status.HTTP_403_FORBIDDEN)
+        
+        # check previous subscriptions
+        pass

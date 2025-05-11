@@ -1,6 +1,8 @@
 import os
 from datetime import datetime
 from weasyprint import HTML
+import stripe
+import json 
 
 
 from django.shortcuts import render, get_object_or_404
@@ -33,7 +35,8 @@ from .models import (
     FavouriteStaff,
     MyStaff,
     JobReport,
-    CompanyReview
+    CompanyReview,
+    InviteMystaff
 
 )
 
@@ -58,6 +61,9 @@ from staff.models import Staff
 from staff.serializers import StaffSerializer
 from shifting.models import DailyShift, Shifting
 from shifting.serializers import DailyShiftSerializer
+from subscription.models import Packages, Subscription
+
+stripe.api_key = settings.STRIPE_SECRET_KEY
 # create company profile
 
 class CompanyProfileCreateView(generics.ListCreateAPIView):
@@ -1224,15 +1230,107 @@ class ClientProfileImageView(APIView):
         return Response(response_data, status=status.HTTP_403_FORBIDDEN)
     
 
-class InvitationCheckoutView(APIView):
-    def post(self, request, *args, **kwargs):
+class MyStaffInvitatinView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
         user = request.user
-        data = request.data
+        client = get_object_or_404(CompanyProfile, user=user)
+        invited_users = InviteMystaff.objects.filter(client=client)
+        data = []
+        for user in invited_users:
+            data.append({
+                "id": user.id,
+                "staff_name": user.staff_name,
+                "staff_email": user.staff_email,
+                "phone": user.phone,
+                "job_role": user.job_role,
+                "employee_type": user.employee_type,
+                "is_joined": user.is_joined,
+                "created_at": user.created_at
+            })
+        response_data = {
+            "status": status.HTTP_200_OK,
+            "success": True,
+            "message": "List of invited users",
+            "data": data
+        }
+        return Response(response_data, status=status.HTTP_200_OK)
+    
+    def post(self, request, package_id, *args, **kwargs):
+        user = request.user
+        staff_data = request.data
 
         if user.is_client:
             client = get_object_or_404(CompanyProfile, user=user)
         else:
             return Response({"error": "Only client can access this endpoint"}, status=status.HTTP_403_FORBIDDEN)
         
-        # check previous subscriptions
-        pass
+
+        try:
+            package = Packages.objects.get(id=package_id)
+            if package:
+                if len(staff_data) > package.number_of_staff:
+                    return Response({"error": "You have reached the maximum number of staff allowed"}, status=status.HTTP_400_BAD_REQUEST)
+        except Packages.DoesNotExist:
+            return Response({"error": "Package not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+        # Get or create Stripe customer
+        try:
+            # Search for existing customer by email
+            customers = stripe.Customer.list(email=user.email)
+            if customers.data:
+                stripe_customer = customers.data[0]
+            else:
+                # Create new customer if not found
+                stripe_customer = stripe.Customer.create(
+                    email=user.email,
+                    name=f"{user.first_name} {user.last_name}"
+                )
+        except stripe.error.StripeError as e:
+            # Handle any Stripe API errors
+            print(f"Stripe error: {str(e)}")
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        # fetch current subscription
+        try:
+            current_subscription = Subscription.objects.get(user=user, status='active')
+            stripe_subscription = stripe.Subscription.retrieve(current_subscription.stripe_subscriptoin_id)
+        except Subscription.DoesNotExist:
+            current_subscription = None
+            stripe_subscription = None
+        
+        if stripe_subscription:
+            pass
+        else:
+            checkout_session = stripe.checkout.Session.create(
+            payment_method_types=['card'],
+            mode='subscription',
+            line_items=[{'price':package.stripe_price_id, 'quantity': 1}],
+            customer=stripe_customer.id,
+            success_url=settings.STRIPE_SUCCESS_URL,
+            cancel_url=settings.STRIPE_CANCEL_URL,
+            metadata={
+                'package_id': str(package_id), 
+                'user_id': str(user.id),
+                'staff': json.dumps(staff_data)
+                },
+                subscription_data={
+                'metadata': {
+                    'user_id':str(user.id),
+                    'package_id': str(package_id),
+                    'staff': json.dumps(staff_data)
+                }
+            },
+            )
+        response_data = {
+            "status": status.HTTP_200_OK,
+            "success": True,
+            "message": "Checkout session created",
+            "data": {
+                "url": checkout_session.url,
+                "success_url": settings.STRIPE_SUCCESS_URL,
+                "cancel_url": settings.STRIPE_CANCEL_URL,
+            }
+        }
+        return Response(response_data, status=status.HTTP_200_OK)

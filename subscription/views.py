@@ -411,7 +411,33 @@ def webhook(request):
             print("Error creating local subscription:", e)
         return HttpResponse(status=200)
 
-    # elif event.type == 'customer.subscription.updated':
+    elif event.type == 'customer.subscription.updated':
+        data = event['data']['object']
+        metadata = data.get('metadata', {})
+        print('metadata', metadata)
+        user_id = metadata.get('user_id')
+        print('user id', user_id)
+        package_id = metadata.get('package_id')
+        print('package id', package_id)
+        stripe_subscription_id = data['id']
+        staff_lists = json.loads(event['data']['object']['metadata']['staff'])
+        print('staff_lists', staff_lists)
+        try:
+            user = User.objects.get(id=user_id)
+            client = CompanyProfile.objects.get(user=user)
+            package = Packages.objects.get(id=package_id)
+            subscription = Subscription.objects.filter(user=user, package=package, stripe_subscriptoin_id=stripe_subscription_id).first()
+            if subscription:
+                # subscription.end_date = datetime.fromtimestamp(data['current_period_end'])
+                subscription.status = 'active'
+                subscription.save()
+                # send staff joining mail
+                send_staff_joining_mail_task.delay(staff_lists, client.id)
+        except Exception as e:
+            print("Error updating subscription:", e)
+            return HttpResponse(status=200)
+        return HttpResponse(status=200)
+    
     #     print('Customer subscription updated')
     #     data = event['data']['object']
     #     metadata = data.get('metadata', {})

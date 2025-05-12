@@ -22,6 +22,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 
+
 from .models import (
     CompanyProfile,
     JobTemplate,
@@ -62,6 +63,7 @@ from staff.serializers import StaffSerializer
 from shifting.models import DailyShift, Shifting
 from shifting.serializers import DailyShiftSerializer
 from subscription.models import Packages, Subscription
+from subscription.tasks import send_staff_joining_mail_task
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 # create company profile
@@ -1271,7 +1273,7 @@ class MyStaffInvitatinView(APIView):
             package = Packages.objects.get(id=package_id)
             if package:
                 if len(staff_data) > package.number_of_staff:
-                    return Response({"error": "You have reached the maximum number of staff allowed"}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({"error": "You have reached the maximum number of staff allowed in this package"}, status=status.HTTP_400_BAD_REQUEST)
         except Packages.DoesNotExist:
             return Response({"error": "Package not found"}, status=status.HTTP_404_NOT_FOUND)
         
@@ -1301,7 +1303,60 @@ class MyStaffInvitatinView(APIView):
             stripe_subscription = None
         
         if stripe_subscription:
-            pass
+            print('stripe subscription exists', stripe_subscription.id)
+            if current_subscription.status == 'active' and current_subscription.package.id == package_id:
+                my_staff= MyStaff.objects.filter(client=client, status=True).count()
+                rem_staff = package.number_of_staff - my_staff
+                if rem_staff > 0:
+                    # send staff joining mail
+                    send_staff_joining_mail_task.delay(staff_data, client.id)
+                    return Response({"message": "Your are already subscribed this packages\n Staff invitation mail will sent successfully!"}, status=status.HTTP_200_OK)
+                else:
+                    # return error response
+                    return Response({"error": "You have reached the maximum number of staff allowed in this package"}, status=status.HTTP_400_BAD_REQUEST)
+            try:
+                update_subscription = stripe.Subscription.modify(
+                    stripe_subscription.id,
+                    items=[{
+                        'id': stripe_subscription['items']['data'][0].id,
+                        'price': package.stripe_price_id
+                    }],
+                    proration_behavior='create_prorations',
+                    metadata={
+                        'package_id': str(package_id), 
+                        'user_id': str(user.id),
+                        'staff': json.dumps(staff_data)
+                    },
+                    
+                    )
+                current_subscription.status = 'canceled'
+                current_subscription.save()
+
+                new_subscription = Subscription.objects.create(
+                    user=user,
+                    package=package,
+                    stripe_subscriptoin_id=update_subscription.id,
+                    end_date=datetime.fromtimestamp(update_subscription['current_period_end']),
+                    status='pending',
+                )
+
+            except stripe.error.StripeError as e:
+                # Handle any Stripe API errors
+                print(f"Stripe error: {str(e)}")
+                return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+            response_data = {
+                "status": status.HTTP_200_OK,
+                "success": True,
+                "message": "Subscription updated successfully",
+                "data": {
+                    # "url": checkout_session.url,
+                    "success_url": settings.STRIPE_SUCCESS_URL,
+                    "cancel_url": settings.STRIPE_CANCEL_URL,
+                }
+            }
+            return Response(response_data, status=status.HTTP_200_OK)
+        
         else:
             checkout_session = stripe.checkout.Session.create(
             payment_method_types=['card'],
@@ -1315,7 +1370,7 @@ class MyStaffInvitatinView(APIView):
                 'user_id': str(user.id),
                 'staff': json.dumps(staff_data)
                 },
-                subscription_data={
+            subscription_data={
                 'metadata': {
                     'user_id':str(user.id),
                     'package_id': str(package_id),

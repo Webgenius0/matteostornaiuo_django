@@ -201,6 +201,7 @@ class FeedJobView(APIView):
                 "start_time": vacancy.start_time,
                 "end_time": vacancy.end_time,
                 "location": vacancy.location,
+                "skills": [skill.name for skill in vacancy.skills.all()],
                 # "salary": vacancy.salary,
                 "number_of_staff": vacancy.number_of_staff,
                 "participants": [

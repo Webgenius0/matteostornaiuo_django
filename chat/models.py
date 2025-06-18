@@ -9,16 +9,23 @@ from django.utils import timezone
 
 # models for chat messages
 class ChatRoom(models.Model):
-    perticipants = models.ManyToManyField(User, related_name='chat_rooms')
-    created_at = models.DateTimeField(auto_now_add=True)
+    participants = models.ManyToManyField(User)
 
-    def __str__(self):
-        return f'Chat Room {self.id}'
+    @classmethod
+    def get_or_create_by_users(cls, user1_id, user2_id):
+        users = sorted([user1_id, user2_id])
+        room = cls.objects.filter(participants__id=users[0]) \
+                          .filter(participants__id=users[1]) \
+                          .first()
+
+        if room:
+            return room, False
+
+        room = cls.objects.create()
+        room.participants.add(*users)
+        return room, True
     
-    def get_room_group_name(self):
-        return f'chat_room_{self.id}'
-    
-class ChatMessae(models.Model):
+class ChatMessage(models.Model):
     room = models.ForeignKey(ChatRoom, related_name='messages', on_delete=models.CASCADE)
     sender = models.ForeignKey(User, related_name='sent_messages', on_delete=models.CASCADE)
     content = models.TextField()

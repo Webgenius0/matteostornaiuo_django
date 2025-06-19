@@ -8,22 +8,24 @@ from users.models import User
 from django.utils import timezone
 
 # models for chat messages
-class ChatRoom(models.Model):
-    participants = models.ManyToManyField(User)
 
-    @classmethod
-    def get_or_create_by_users(cls, user1_id, user2_id):
+class ChatRoomManager(models.Manager):
+    def get_or_create_by_users(self, user1_id, user2_id):
         users = sorted([user1_id, user2_id])
-        room = cls.objects.filter(participants__id=users[0]) \
-                          .filter(participants__id=users[1]) \
-                          .first()
+        rooms = self.filter(participants__id=users[0]).filter(participants__id=users[1])
+        for room in rooms:
+            if room.participants.count() == 2:
+                return room, False
 
-        if room:
-            return room, False
-
-        room = cls.objects.create()
+        room = self.create()
         room.participants.add(*users)
         return room, True
+    
+class ChatRoom(models.Model):
+    participants = models.ManyToManyField(User)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    objects = ChatRoomManager() 
     
 class ChatMessage(models.Model):
     room = models.ForeignKey(ChatRoom, related_name='messages', on_delete=models.CASCADE)
@@ -34,7 +36,7 @@ class ChatMessage(models.Model):
 
 
     def __str__(self):
-        return f'Message from {self.sender.first_name} to {self.receiver.last_name} at {self.timestamp}'
+        return f'Message from {self.sender.first_name} at {self.timestamp}'
     
     class Meta:
         ordering = ['-timestamp']

@@ -60,12 +60,26 @@ class ChatHistoryAPIView(APIView):
             return Response({"error": "Chat room not found."}, status=status.HTTP_404_NOT_FOUND)
 
         messages = chat_room.messages.all().order_by('timestamp')
+        to_user = chat_room.participants.exclude(id=user.id).first()
+        # if to_user.is_client:
+        #     profile = Staff.objects.filter(user=to_user).first()
+        # elif to_user.is_staff:
+        #     profile = CompanyProfile.objects.filter(user=to_user).first()
+        # if not profile:
+        #     return Response({"error": "Participant profile not found."}, status=status.HTTP_404_NOT_FOUND)
+        
         message_list = [
             {
                 "sender": message.sender.id,
                 "content": message.content,
                 "timestamp": message.timestamp.isoformat(),
-                "is_read": message.is_read
+                "is_read": message.is_read,
+                "sender":{
+                    "id": message.sender.id,
+                    "first_name": message.sender.first_name,
+                    "last_name": message.sender.last_name,
+                    "avatar": message.sender.avatar.url if hasattr(message.sender, 'avatar') and message.sender.avatar else None
+                }
             } for message in messages
         ]
 
